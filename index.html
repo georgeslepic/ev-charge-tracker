@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>EV Charge Tracker</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <style>
+    :root { --pad: 14px; --radius: 14px; }
+    body { font-family: -apple-system, system-ui, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background: #f6f7fb; color: #111; }
+    header { position: sticky; top: 0; background: white; padding: 12px var(--pad); border-bottom: 1px solid #e5e7ef; z-index: 10; }
+    header h1 { margin: 0; font-size: 18px; }
+    main { padding: var(--pad); display: grid; gap: 12px; max-width: 980px; margin: 0 auto; }
+    .card { background: white; border: 1px solid #e5e7ef; border-radius: var(--radius); padding: 12px; }
+    .grid { display: grid; gap: 10px; grid-template-columns: repeat(6, 1fr); }
+    .grid .field { grid-column: span 2; }
+    .grid .field.wide { grid-column: span 3; }
+    label { display: block; font-size: 12px; color: #444; margin-bottom: 6px; }
+    input, button, select { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #d7dbe9; border-radius: 12px; background: #fff; font-size: 14px; }
+    input[type="number"] { font-variant-numeric: tabular-nums; }
+    button { background: #111; color: #fff; border: none; cursor: pointer; }
+    button.secondary { background: #eef1fb; color: #111; border: 1px solid #d7dbe9; }
+    button.danger { background: #b00020; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .kpi { display: grid; grid-template-columns: 1fr; gap: 2px; padding: 10px; border-radius: 12px; background: #f6f7fb; border: 1px solid #e5e7ef; min-width: 160px; }
+    .kpi .v { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .kpi .t { font-size: 12px; color: #555; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { border-bottom: 1px solid #eef0f6; padding: 8px 6px; text-align: left; }
+    th { font-size: 12px; color: #555; }
+    .muted { color: #666; font-size: 12px; }
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tab { padding: 8px 10px; border-radius: 12px; border: 1px solid #d7dbe9; background: #fff; cursor: pointer; }
+    .tab.active { background: #111; color: #fff; border-color: #111; }
+    canvas { width: 100%; height: 260px; }
+    @media (max-width: 720px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
+      .grid .field, .grid .field.wide { grid-column: span 2; }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1>EV Charge Tracker — Maison</h1>
+    <div class="muted">Données stockées localement sur cet iPhone (LocalStorage).</div>
+  </header>
+
+  <main>
+    <div class="card">
+      <div class="tabs">
+        <div class="tab active" data-tab="entry">Saisie</div>
+        <div class="tab" data-tab="stats">Stats</div>
+        <div class="tab" data-tab="history">Historique</div>
+        <div class="tab" data-tab="charts">Graphiques</div>
+        <div class="tab" data-tab="data">Import/Export</div>
+      </div>
+    </div>
+
+    <!-- Saisie -->
+    <section class="card" id="tab-entry">
+      <h3 style="margin:0 0 8px 0;">Ajouter une recharge</h3>
+
+      <div class="grid">
+        <div class="field">
+          <label>Date</label>
+          <input id="date" type="date" />
+        </div>
+        <div class="field">
+          <label>% départ</label>
+          <input id="socStart" type="number" min="0" max="100" step="0.1" value="20" />
+        </div>
+        <div class="field">
+          <label>% arrivée</label>
+          <input id="socEnd" type="number" min="0" max="100" step="0.1" value="80" />
+        </div>
+        <div class="field wide">
+          <label>Km (optionnel)</label>
+          <input id="km" type="number" min="0" step="0.1" placeholder="Ex: 120" />
+        </div>
+
+        <div class="field">
+          <label>Batterie (kWh)</label>
+          <input id="batteryKwh" type="number" min="1" step="0.1" value="77.4" />
+        </div>
+        <div class="field">
+          <label>Pertes (%)</label>
+          <input id="lossPct" type="number" min="0" max="30" step="0.1" value="10" />
+        </div>
+        <div class="field wide">
+          <label>Prix ($/kWh)</label>
+          <input id="price" type="number" min="0" step="0.00001" value="0.10014" />
+        </div>
+      </div>
+
+      <div style="margin-top:10px;" class="row" id="previewKpis"></div>
+
+      <div class="row" style="margin-top:10px;">
+        <button id="saveBtn">Enregistrer</button>
+        <button class="secondary" id="resetBtn" type="button">Réinitialiser champs</button>
+      </div>
+
+      <div class="muted" style="margin-top:10px;">
+        Formules: kWh_batterie = batterie × ΔSOC ; kWh_mur = kWh_batterie / (1 − pertes) ; coût = kWh_mur × prix.
+      </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="card" id="tab-stats" style="display:none;">
+      <h3 style="margin:0 0 8px 0;">Sommes & moyennes</h3>
+      <div class="row" id="periodKpis"></div>
+      <div style="height:12px;"></div>
+      <div class="row">
+        <div style="flex:1; min-width: 280px;">
+          <h4 style="margin:0 0 6px 0;">Par semaine</h4>
+          <div id="tblWeek"></div>
+        </div>
+        <div style="flex:1; min-width: 280px;">
+          <h4 style="margin:0 0 6px 0;">Par mois</h4>
+          <div id="tblMonth"></div>
+        </div>
+        <div style="flex:1; min-width: 280px;">
+          <h4 style="margin:0 0 6px 0;">Par année</h4>
+          <div id="tblYear"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Historique -->
+    <section class="card" id="tab-history" style="display:none;">
+      <h3 style="margin:0 0 8px 0;">Historique</h3>
+      <div class="row" style="margin-bottom:10px;">
+        <button class="secondary" id="exportCsvBtn" type="button">Exporter CSV</button>
+        <button class="danger" id="clearAllBtn" type="button">Tout effacer</button>
+      </div>
+      <div id="historyTable"></div>
+      <div class="muted" style="margin-top:8px;">Tip: le bouton “Tout effacer” supprime toutes les entrées stockées sur cet iPhone.</div>
+    </section>
+
+    <!-- Graphiques -->
+    <section class="card" id="tab-charts" style="display:none;">
+      <h3 style="margin:0 0 8px 0;">Graphiques</h3>
+      <div class="muted" style="margin-bottom:8px;">(Si tu veux que ça marche sans Internet, on passera Chart.js en local en V2.)</div>
+      <div class="card" style="padding:10px; margin-bottom:10px;">
+        <strong>kWh au mur / jour</strong>
+        <canvas id="chartKwh"></canvas>
+      </div>
+      <div class="card" style="padding:10px; margin-bottom:10px;">
+        <strong>Coût ($) / jour</strong>
+        <canvas id="chartCost"></canvas>
+      </div>
+      <div class="card" style="padding:10px;">
+        <strong>kWh/100 km (entrées avec km)</strong>
+        <canvas id="chartKwh100"></canvas>
+      </div>
+    </section>
+
+    <!-- Import/Export -->
+    <section class="card" id="tab-data" style="display:none;">
+      <h3 style="margin:0 0 8px 0;">Import / Export</h3>
+      <div class="row">
+        <button class="secondary" id="exportJsonBtn" type="button">Exporter JSON (backup)</button>
+        <input id="importJsonInput" type="file" accept="application/json" />
+      </div>
+      <div class="muted" style="margin-top:8px;">
+        Export JSON = backup complet. Import JSON = restauration sur le même iPhone.
+      </div>
+    </section>
+  </main>
+
+<script>
+  // -------------------------
+  // Storage model
+  // -------------------------
+  const KEY = "ev_charges_v1";
+
+  function loadData() {
+    try {
+      return JSON.parse(localStorage.getItem(KEY)) || [];
+    } catch {
+      return [];
+    }
+  }
+  function saveData(rows) {
+    localStorage.setItem(KEY, JSON.stringify(rows));
+  }
+
+  function uid() {
+    return Math.random().toString(16).slice(2) + "-" + Date.now().toString(16);
+  }
+
+  // -------------------------
+  // Calculations (au mur incl. pertes)
+  // -------------------------
+  function calcMetrics(row) {
+    const socStart = +row.socStart;
+    const socEnd = +row.socEnd;
+    const batteryKwh = +row.batteryKwh;
+    const price = +row.price;
+    const lossPct = +row.lossPct;
+
+    const deltaSoc = (socEnd - socStart) / 100.0;
+    const kwhToBattery = batteryKwh * deltaSoc;
+    const lossFrac = lossPct / 100.0;
+    const kwhFromWall = kwhToBattery / (1 - lossFrac);
+    const cost = kwhFromWall * price;
+
+    let kwhPer100 = null;
+    const km = row.km === "" || row.km == null ? null : +row.km;
+    if (km != null && km > 0) kwhPer100 = (kwhFromWall / km) * 100.0;
+
+    return { deltaSoc, kwhToBattery, kwhFromWall, cost, kwhPer100 };
+  }
+
+  // ISO week label YYYY-Www
+  function isoWeekLabel(d) {
+    const date = new Date(d + "T00:00:00");
+    const tmp = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = tmp.getUTCDay() || 7;
+    tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(),0,1));
+    const weekNo = Math.ceil((((tmp - yearStart) / 86400000) + 1)/7);
+    const year = tmp.getUTCFullYear();
+    return `${year}-W${String(weekNo).padStart(2,"0")}`;
+  }
+
+  function monthLabel(d) {
+    return d.slice(0,7); // YYYY-MM
+  }
+  function yearLabel(d) {
+    return d.slice(0,4);
+  }
+
+  // -------------------------
+  // UI helpers
+  // -------------------------
+  const $ = (id) => document.getElementById(id);
+
+  function setTodayDefault() {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth()+1).padStart(2,"0");
+    const dd = String(now.getDate()).padStart(2,"0");
+    $("date").value = `${yyyy}-${mm}-${dd}`;
+  }
+
+  function fmt(n, digits=2) {
+    if (n == null || Number.isNaN(n)) return "—";
+    return (+n).toFixed(digits);
+  }
+
+  function renderKpis(container, items) {
+    container.innerHTML = "";
+    items.forEach(it => {
+      const div = document.createElement("div");
+      div.className = "kpi";
+      div.innerHTML = `<div class="v">${it.value}</div><div class="t">${it.label}</div>`;
+      container.appendChild(div);
+    });
+  }
+
+  function tableFromAgg(aggRows, keyName) {
+    if (!aggRows.length) return `<div class="muted">Aucune donnée</div>`;
+    const header = `
+      <table>
+        <thead>
+          <tr>
+            <th>${keyName}</th><th>Sessions</th><th>kWh mur</th><th>$</th><th>Km</th><th>kWh/100</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+    const body = aggRows.map(r => `
+      <tr>
+        <td>${r.key}</td>
+        <td>${r.sessions}</td>
+        <td>${fmt(r.kwhWall,1)}</td>
+        <td>${fmt(r.cost,2)}</td>
+        <td>${r.km ? fmt(r.km,0) : "—"}</td>
+        <td>${r.kwh100 != null ? fmt(r.kwh100,2) : "—"}</td>
+      </tr>
+    `).join("");
+    return header + body + `</tbody></table>`;
+  }
+
+  // -------------------------
+  // Aggregations
+  // -------------------------
+  function aggregate(rows, bucketFn) {
+    const map = new Map();
+    rows.forEach(row => {
+      const key = bucketFn(row.date);
+      const m = calcMetrics(row);
+      const km = (row.km === "" || row.km == null) ? 0 : +row.km;
+
+      if (!map.has(key)) {
+        map.set(key, { key, sessions: 0, kwhWall: 0, cost: 0, km: 0 });
+      }
+      const acc = map.get(key);
+      acc.sessions += 1;
+      acc.kwhWall += m.kwhFromWall;
+      acc.cost += m.cost;
+      acc.km += km > 0 ? km : 0;
+    });
+
+    const out = Array.from(map.values()).sort((a,b) => a.key.localeCompare(b.key));
+    out.forEach(r => {
+      r.kwh100 = (r.km && r.km > 0) ? (r.kwhWall / r.km) * 100 : null;
+    });
+    return out;
+  }
+
+  function periodSummary(rows, startDate, endDateInclusive) {
+    const subset = rows.filter(r => r.date >= startDate && r.date <= endDateInclusive);
+    let sessions = 0, kwhWall=0, cost=0, km=0;
+    subset.forEach(r => {
+      const m = calcMetrics(r);
+      sessions += 1;
+      kwhWall += m.kwhFromWall;
+      cost += m.cost;
+      const dkm = (r.km === "" || r.km == null) ? 0 : +r.km;
+      if (dkm > 0) km += dkm;
+    });
+    const kwh100 = (km > 0) ? (kwhWall / km) * 100 : null;
+    return { sessions, kwhWall, cost, km, kwh100 };
+  }
+
+  // Current week/month/year bounds
+  function currentWeekBounds() {
+    const today = new Date();
+    const day = today.getDay() || 7; // 1..7 (Mon..Sun)
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - (day - 1));
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    return [toISO(monday), toISO(sunday)];
+  }
+  function currentMonthBounds() {
+    const today = new Date();
+    const first = new Date(today.getFullYear(), today.getMonth(), 1);
+    const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    return [toISO(first), toISO(last)];
+  }
+  function currentYearBounds() {
+    const today = new Date();
+    const first = new Date(today.getFullYear(), 0, 1);
+    const last = new Date(today.getFullYear(), 11, 31);
+    return [toISO(first), toISO(last)];
+  }
+  function toISO(d) {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,"0");
+    const dd = String(d.getDate()).padStart(2,"0");
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  // -------------------------
+  // Charts
+  // -------------------------
+  let chartKwh, chartCost, chartKwh100;
+
+  function upsertCharts(rows) {
+    const sorted = [...rows].sort((a,b)=>a.date.localeCompare(b.date));
+    const labels = sorted.map(r => r.date);
+    const kwh = sorted.map(r => calcMetrics(r).kwhFromWall);
+    const cost = sorted.map(r => calcMetrics(r).cost);
+
+    const kmRows = sorted.filter(r => r.km != null && r.km !== "" && +r.km > 0);
+    const labels100 = kmRows.map(r => r.date);
+    const kwh100 = kmRows.map(r => calcMetrics(r).kwhPer100);
+
+    const mkLine = (ctx, labels, data, title) => new Chart(ctx, {
+      type: "line",
+      data: { labels, datasets: [{ label: title, data, tension: 0.25 }] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { x: { ticks: { maxRotation: 45, minRotation: 0 } } }
+      }
+    });
+
+    const mkLine2 = (ctx, labels, data, title) => new Chart(ctx, {
+      type: "line",
+      data: { labels, datasets: [{ label: title, data, tension: 0.25 }] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { x: { ticks: { maxRotation: 45, minRotation: 0 } } }
+      }
+    });
+
+    if (chartKwh) chartKwh.destroy();
+    if (chartCost) chartCost.destroy();
+    if (chartKwh100) chartKwh100.destroy();
+
+    chartKwh = mkLine($("chartKwh"), labels, kwh, "kWh au mur");
+    chartCost = mkLine2($("chartCost"), labels, cost, "Coût ($)");
+
+    chartKwh100 = new Chart($("chartKwh100"), {
+      type: "line",
+      data: { labels: labels100, datasets: [{ label: "kWh/100", data: kwh100, tension: 0.25 }] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { x: { ticks: { maxRotation: 45, minRotation: 0 } } }
+      }
+    });
+  }
+
+  // -------------------------
+  // Render
+  // -------------------------
+  function readForm() {
+    return {
+      id: uid(),
+      date: $("date").value,
+      socStart: $("socStart").value,
+      socEnd: $("socEnd").value,
+      batteryKwh: $("batteryKwh").value,
+      lossPct: $("lossPct").value,
+      price: $("price").value,
+      km: $("km").value
+    };
+  }
+
+  function validate(row) {
+    if (!row.date) return "Date requise.";
+    const a = +row.socStart, b = +row.socEnd;
+    if (Number.isNaN(a) || Number.isNaN(b)) return "SOC invalide.";
+    if (b < a) return "% arrivée doit être >= % départ.";
+    if (+row.batteryKwh <= 0) return "Batterie kWh invalide.";
+    if (+row.price < 0) return "Prix invalide.";
+    if (+row.lossPct < 0 || +row.lossPct >= 100) return "Pertes % invalides.";
+    return null;
+  }
+
+  function renderPreview() {
+    const row = readForm();
+    const err = validate(row);
+    if (err) {
+      renderKpis($("previewKpis"), [{ value: "⚠️", label: err }]);
+      return;
+    }
+    const m = calcMetrics(row);
+    const deltaPct = ((+row.socEnd) - (+row.socStart));
+    const items = [
+      { value: `${fmt(deltaPct,1)} %`, label: "ΔSOC" },
+      { value: `${fmt(m.kwhToBattery,2)}`, label: "kWh batterie" },
+      { value: `${fmt(m.kwhFromWall,2)}`, label: "kWh au mur" },
+      { value: `${fmt(m.cost,2)} $`, label: "Coût" },
+    ];
+    if (m.kwhPer100 != null) items.push({ value: `${fmt(m.kwhPer100,2)}`, label: "kWh/100 km" });
+    renderKpis($("previewKpis"), items);
+  }
+
+  function renderHistory(rows) {
+    if (!rows.length) {
+      $("historyTable").innerHTML = `<div class="muted">Aucune recharge enregistrée.</div>`;
+      return;
+    }
+    const sorted = [...rows].sort((a,b)=> (b.date + b.id).localeCompare(a.date + a.id));
+    const html = `
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th><th>%</th><th>kWh mur</th><th>$</th><th>Km</th><th>kWh/100</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${sorted.map(r => {
+            const m = calcMetrics(r);
+            const km = (r.km && +r.km > 0) ? fmt(r.km,0) : "—";
+            return `
+              <tr>
+                <td>${r.date}</td>
+                <td>${fmt(r.socStart,1)}→${fmt(r.socEnd,1)}</td>
+                <td>${fmt(m.kwhFromWall,2)}</td>
+                <td>${fmt(m.cost,2)}</td>
+                <td>${km}</td>
+                <td>${m.kwhPer100 != null ? fmt(m.kwhPer100,2) : "—"}</td>
+                <td><button class="secondary" data-del="${r.id}" style="padding:8px 10px;">Suppr.</button></td>
+              </tr>
+            `;
+          }).join("")}
+        </tbody>
+      </table>
+    `;
+    $("historyTable").innerHTML = html;
+
+    document.querySelectorAll("[data-del]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-del");
+        const next = loadData().filter(r => r.id !== id);
+        saveData(next);
+        refreshAll();
+      });
+    });
+  }
+
+  function renderStats(rows) {
+    const [wStart, wEnd] = currentWeekBounds();
+    const [mStart, mEnd] = currentMonthBounds();
+    const [yStart, yEnd] = currentYearBounds();
+
+    const wk = periodSummary(rows, wStart, wEnd);
+    const mo = periodSummary(rows, mStart, mEnd);
+    const yr = periodSummary(rows, yStart, yEnd);
+
+    renderKpis($("periodKpis"), [
+      { value: `${fmt(wk.kwhWall,1)} kWh`, label: `Semaine (${wStart}→${wEnd})` },
+      { value: `${fmt(wk.cost,2)} $`, label: "Coût semaine" },
+      { value: wk.kwh100 != null ? `${fmt(wk.kwh100,2)}` : "—", label: "kWh/100 semaine" },
+
+      { value: `${fmt(mo.kwhWall,1)} kWh`, label: `Mois (${mStart}→${mEnd})` },
+      { value: `${fmt(mo.cost,2)} $`, label: "Coût mois" },
+      { value: mo.kwh100 != null ? `${fmt(mo.kwh100,2)}` : "—", label: "kWh/100 mois" },
+
+      { value: `${fmt(yr.kwhWall,1)} kWh`, label: `Année (${yStart}→${yEnd})` },
+      { value: `${fmt(yr.cost,2)} $`, label: "Coût année" },
+      { value: yr.kwh100 != null ? `${fmt(yr.kwh100,2)}` : "—", label: "kWh/100 année" },
+    ]);
+
+    $("tblWeek").innerHTML = tableFromAgg(aggregate(rows, d => isoWeekLabel(d)), "Semaine");
+    $("tblMonth").innerHTML = tableFromAgg(aggregate(rows, d => monthLabel(d)), "Mois");
+    $("tblYear").innerHTML = tableFromAgg(aggregate(rows, d => yearLabel(d)), "Année");
+  }
+
+  function exportCsv(rows) {
+    const header = ["date","socStart","socEnd","batteryKwh","lossPct","price","km","kwhFromWall","cost","kwhPer100"];
+    const lines = [header.join(",")];
+    const sorted = [...rows].sort((a,b)=>a.date.localeCompare(b.date));
+    sorted.forEach(r => {
+      const m = calcMetrics(r);
+      const vals = [
+        r.date, r.socStart, r.socEnd, r.batteryKwh, r.lossPct, r.price,
+        (r.km==null||r.km==="") ? "" : r.km,
+        m.kwhFromWall, m.cost, (m.kwhPer100==null ? "" : m.kwhPer100)
+      ].map(v => (v==null ? "" : String(v)));
+      lines.push(vals.join(","));
+    });
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "ev_charges.csv";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  function exportJson(rows) {
+    const blob = new Blob([JSON.stringify(rows, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "ev_charges_backup.json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  function refreshAll() {
+    const rows = loadData();
+    renderPreview();
+    renderHistory(rows);
+    renderStats(rows);
+    try { upsertCharts(rows); } catch {}
+  }
+
+  // -------------------------
+  // Tabs
+  // -------------------------
+  const tabs = document.querySelectorAll(".tab");
+  function showTab(name) {
+    ["entry","stats","history","charts","data"].forEach(t => {
+      document.getElementById("tab-" + t).style.display = (t === name) ? "block" : "none";
+    });
+    tabs.forEach(el => el.classList.toggle("active", el.dataset.tab === name));
+    if (name === "charts") refreshAll();
+  }
+  tabs.forEach(el => el.addEventListener("click", () => showTab(el.dataset.tab)));
+
+  // -------------------------
+  // Events
+  // -------------------------
+  ["date","socStart","socEnd","batteryKwh","lossPct","price","km"].forEach(id => {
+    $(id).addEventListener("input", renderPreview);
+  });
+
+  $("saveBtn").addEventListener("click", () => {
+    const row = readForm();
+    const err = validate(row);
+    if (err) return alert(err);
+
+    const rows = loadData();
+    rows.push(row);
+    saveData(rows);
+
+    // keep defaults but clear km
+    $("km").value = "";
+    refreshAll();
+    alert("Enregistré ✅");
+  });
+
+  $("resetBtn").addEventListener("click", () => {
+    $("socStart").value = 20;
+    $("socEnd").value = 80;
+    $("batteryKwh").value = 77.4;
+    $("lossPct").value = 10;
+    $("price").value = 0.10014;
+    $("km").value = "";
+    setTodayDefault();
+    renderPreview();
+  });
+
+  $("exportCsvBtn").addEventListener("click", () => exportCsv(loadData()));
+
+  $("clearAllBtn").addEventListener("click", () => {
+    if (!confirm("Tout effacer sur cet iPhone ?")) return;
+    saveData([]);
+    refreshAll();
+  });
+
+  $("exportJsonBtn").addEventListener("click", () => exportJson(loadData()));
+
+  $("importJsonInput").addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const txt = await file.text();
+    try {
+      const rows = JSON.parse(txt);
+      if (!Array.isArray(rows)) throw new Error("Format invalide");
+      saveData(rows);
+      refreshAll();
+      alert("Import OK ✅");
+    } catch (err) {
+      alert("Import échoué: " + err.message);
+    }
+  });
+
+  // init
+  setTodayDefault();
+  refreshAll();
+</script>
+</body>
+</html>
