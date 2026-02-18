@@ -1,0 +1,1200 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Recharge VE — Historique & Stats (Local)</title>
+  <style>
+    :root{
+      --bg:#0b1020; --card:#111a33; --card2:#0f1730; --text:#e8ecff; --muted:#a7b0d6;
+      --accent:#7aa7ff; --accent2:#7dffb2; --danger:#ff6b6b; --warn:#ffd166;
+      --border:rgba(255,255,255,.10);
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius:16px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:var(--sans);
+      background: radial-gradient(1200px 600px at 20% -10%, rgba(122,167,255,.25), transparent 55%),
+                  radial-gradient(900px 500px at 90% 0%, rgba(125,255,178,.18), transparent 55%),
+                  linear-gradient(180deg, #070b16, #0b1020 35%, #070b16);
+      color:var(--text);
+    }
+    header{
+      padding:22px 18px 10px;
+      position:sticky; top:0; z-index:10;
+      backdrop-filter: blur(10px);
+      background: linear-gradient(180deg, rgba(7,11,22,.88), rgba(7,11,22,.55));
+      border-bottom:1px solid var(--border);
+    }
+    .wrap{max-width:1200px; margin:0 auto; padding:0 14px 28px;}
+    .topline{display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap;}
+    h1{margin:0; font-size:18px; letter-spacing:.2px; font-weight:750}
+    .sub{color:var(--muted); font-size:12.5px}
+    .badge{
+      display:inline-flex; gap:8px; align-items:center;
+      padding:8px 10px; border:1px solid var(--border); border-radius:999px;
+      background: rgba(255,255,255,.04);
+      font-family:var(--mono); font-size:12px; color:var(--muted)
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: 1.25fr .75fr;
+      gap:14px;
+      margin-top:14px;
+    }
+    @media (max-width: 980px){
+      .grid{grid-template-columns: 1fr; }
+    }
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .card h2{
+      margin:0;
+      font-size:14px;
+      padding:14px 14px 10px;
+      color:#f2f4ff;
+      letter-spacing:.2px;
+    }
+    .card .content{padding:0 14px 14px;}
+    .row{display:flex; gap:10px; flex-wrap:wrap}
+    label{display:block; font-size:12px; color:var(--muted); margin:10px 0 6px}
+    input, select, button, textarea{
+      font-family:inherit;
+      font-size:14px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background: rgba(0,0,0,.25);
+      color:var(--text);
+      padding:10px 12px;
+      outline:none;
+    }
+    input::placeholder, textarea::placeholder{color:rgba(167,176,214,.6)}
+    input:focus, select:focus, textarea:focus{
+      border-color: rgba(122,167,255,.65);
+      box-shadow: 0 0 0 3px rgba(122,167,255,.18);
+    }
+    .btn{
+      cursor:pointer;
+      background: linear-gradient(180deg, rgba(122,167,255,.28), rgba(122,167,255,.16));
+      border-color: rgba(122,167,255,.45);
+      font-weight:650;
+    }
+    .btn:active{transform: translateY(1px)}
+    .btn2{
+      cursor:pointer;
+      background: linear-gradient(180deg, rgba(125,255,178,.20), rgba(125,255,178,.10));
+      border-color: rgba(125,255,178,.42);
+      font-weight:650;
+    }
+    .btnDanger{
+      cursor:pointer;
+      background: linear-gradient(180deg, rgba(255,107,107,.20), rgba(255,107,107,.10));
+      border-color: rgba(255,107,107,.45);
+      font-weight:650;
+    }
+    .btnGhost{
+      cursor:pointer;
+      background: rgba(255,255,255,.04);
+      border-color: var(--border);
+      font-weight:650;
+    }
+    .tiny{font-size:12px; color:var(--muted)}
+    .split{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+    @media (max-width: 520px){
+      .split{grid-template-columns: 1fr;}
+    }
+    .stats{
+      display:grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap:10px;
+      padding:0 14px 14px;
+    }
+    .stat{
+      background: rgba(0,0,0,.18);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:10px 10px 9px;
+      min-height:68px;
+    }
+    .stat .k{font-size:11.5px; color:var(--muted)}
+    .stat .v{font-size:18px; font-weight:760; margin-top:6px}
+    .stat .s{font-size:11.5px; color:rgba(167,176,214,.8); margin-top:3px; font-family:var(--mono)}
+    .mono{font-family:var(--mono)}
+    table{
+      width:100%;
+      border-collapse: collapse;
+      font-size:13px;
+      overflow:hidden;
+    }
+    thead th{
+      text-align:left;
+      font-size:11.5px;
+      letter-spacing:.25px;
+      color:var(--muted);
+      padding:10px 8px;
+      border-bottom:1px solid var(--border);
+      background: rgba(0,0,0,.12);
+      position:sticky; top:0;
+    }
+    tbody td{
+      padding:10px 8px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+      vertical-align:top;
+    }
+    tbody tr:hover{background: rgba(122,167,255,.06)}
+    .actions{display:flex; gap:6px; flex-wrap:wrap}
+    .pill{
+      display:inline-flex; gap:6px; align-items:center;
+      padding:4px 8px; border-radius:999px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      font-size:12px; color:var(--muted)
+    }
+    .pill b{color:var(--text); font-weight:750}
+    .hr{height:1px; background: var(--border); margin:12px 0}
+    .note{
+      border:1px dashed rgba(255,255,255,.18);
+      background: rgba(0,0,0,.14);
+      border-radius:14px;
+      padding:10px 12px;
+      color:rgba(232,236,255,.92);
+      font-size:12.5px;
+      line-height:1.45;
+    }
+    canvas{
+      width:100%;
+      height:200px;
+      display:block;
+      background: rgba(0,0,0,.18);
+      border:1px solid var(--border);
+      border-radius:14px;
+    }
+    .footerBar{
+      display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:space-between;
+      padding:12px 14px 14px;
+      border-top:1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.10);
+    }
+    .fileRow{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+    input[type="file"]{padding:8px 10px}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="topline">
+        <div>
+          <h1>Recharge VE — Historique & Stats</h1>
+          <div class="sub">Tout est sauvegardé localement (LocalStorage). Import/Export JSON inclus.</div>
+        </div>
+        <div class="badge" id="storageBadge">Chargement…</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="grid">
+      <!-- LEFT -->
+      <section class="card">
+        <h2>Nouvelle entrée de charge</h2>
+        <div class="content">
+          <div class="split">
+            <div>
+              <label for="vehicle">Véhicule (optionnel)</label>
+              <input id="vehicle" placeholder="ex: Anne" />
+            </div>
+            <div>
+              <label for="location">Lieu (optionnel)</label>
+              <input id="location" placeholder="ex: Maison, BRCC, Bureau…" />
+            </div>
+          </div>
+
+          <div class="split">
+            <div>
+              <label for="date">Date</label>
+              <input id="date" type="date" />
+            </div>
+            <div>
+              <label for="odometer">Odomètre (km, optionnel)</label>
+              <input id="odometer" type="number" min="0" step="1" placeholder="ex: 15234" />
+            </div>
+          </div>
+
+          <div class="split">
+            <div>
+              <label for="fromPct">De (%)</label>
+              <input id="fromPct" type="number" min="0" max="100" step="1" placeholder="ex: 20" />
+            </div>
+            <div>
+              <label for="toPct">À (%)</label>
+              <input id="toPct" type="number" min="0" max="100" step="1" placeholder="ex: 80" />
+            </div>
+          </div>
+
+          <div class="split">
+            <div>
+              <label for="kwh">Énergie (kWh, optionnel)</label>
+              <input id="kwh" type="number" min="0" step="0.1" placeholder="ex: 32.4" />
+            </div>
+            <div>
+              <label for="cost">Coût ($, optionnel)</label>
+              <input id="cost" type="number" min="0" step="0.01" placeholder="ex: 9.75" />
+            </div>
+          </div>
+
+          <label for="notes">Notes (optionnel)</label>
+          <textarea id="notes" rows="2" placeholder="ex: Charge lente, hiver, préconditionnement…"></textarea>
+
+          <div class="row" style="margin-top:12px">
+            <button class="btn2" id="addBtn">Ajouter</button>
+            <button class="btnGhost" id="resetFormBtn" title="Efface les champs du formulaire">Réinitialiser</button>
+            <span class="tiny" id="formHint"></span>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="row" style="align-items:flex-end">
+            <div style="flex:1; min-width:220px">
+              <label for="filterVehicle">Filtre véhicule</label>
+              <select id="filterVehicle"></select>
+            </div>
+            <div style="flex:1; min-width:220px">
+              <label for="filterYear">Filtre année</label>
+              <select id="filterYear"></select>
+            </div>
+            <div class="row">
+              <button class="btnGhost" id="clearFiltersBtn">Tout afficher</button>
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:12px; justify-content:space-between">
+            <div class="pill"><span>Entrées:</span> <b id="countShown">0</b> <span class="mono">/</span> <b id="countAll">0</b></div>
+            <div class="pill"><span>Tri:</span> <b id="sortState">Date ↓</b></div>
+          </div>
+        </div>
+
+        <div class="content" style="padding-top:0">
+          <div style="max-height:420px; overflow:auto; border-radius:14px; border:1px solid rgba(255,255,255,.08)">
+            <table>
+              <thead>
+                <tr>
+                  <th style="min-width:95px">Date</th>
+                  <th style="min-width:70px">De</th>
+                  <th style="min-width:70px">À</th>
+                  <th style="min-width:70px">Δ</th>
+                  <th style="min-width:110px">kWh</th>
+                  <th style="min-width:110px">$</th>
+                  <th style="min-width:140px">Véhicule</th>
+                  <th style="min-width:140px">Lieu</th>
+                  <th>Notes</th>
+                  <th style="min-width:140px">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="footerBar">
+          <div class="fileRow">
+            <button class="btn" id="exportBtn">Exporter JSON</button>
+            <button class="btnGhost" id="copyCsvBtn" title="Copie un CSV dans le presse-papiers">Copier CSV</button>
+          </div>
+          <div class="fileRow">
+            <input id="importFile" type="file" accept=".json,application/json,text/plain" />
+            <button class="btnGhost" id="importBtn">Importer</button>
+            <button class="btnDanger" id="wipeBtn" title="Efface toutes les données locales">Tout effacer</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT -->
+      <aside class="card">
+        <h2>Stats / Bilan</h2>
+
+        <div class="stats" id="statsGrid">
+          <!-- populated by JS -->
+        </div>
+
+        <div class="content">
+          <label>Graph — Δ% par date (entrées filtrées)</label>
+          <canvas id="chart" width="900" height="260"></canvas>
+
+          <div class="hr"></div>
+
+          <h2 style="padding:0; margin:0 0 8px; font-size:13px">Bilan mensuel (Δ% et coûts)</h2>
+          <div style="max-height:260px; overflow:auto; border-radius:14px; border:1px solid rgba(255,255,255,.08)">
+            <table>
+              <thead>
+                <tr>
+                  <th>Mois</th>
+                  <th>Entrées</th>
+                  <th>Δ% total</th>
+                  <th>kWh total</th>
+                  <th>$ total</th>
+                  <th>$ / kWh</th>
+                </tr>
+              </thead>
+              <tbody id="monthlyBody"></tbody>
+            </table>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="note">
+            <b>Sauvegarde:</b> les données sont gardées dans ton navigateur (LocalStorage).<br/>
+            <b>Conseil:</b> fais un Export JSON de temps en temps (backup). Sur iPhone, si un fichier est “grisé”, renomme-le en <span class="mono">.txt</span> ou passe par “Partager → Enregistrer dans Fichiers”.
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+<script>
+/**
+ * Recharge VE — Single file app
+ * - Stockage: localStorage (clé: ve_charging_log_v1)
+ * - Fonctions: ajout, édition inline (modal légère), suppression, filtres, stats, graphique canvas, bilan mensuel
+ * - Import/Export JSON + export CSV (copie presse-papiers)
+ */
+
+const STORAGE_KEY = "ve_charging_log_v1";
+
+const $ = (id) => document.getElementById(id);
+
+const els = {
+  storageBadge: $("storageBadge"),
+
+  vehicle: $("vehicle"),
+  location: $("location"),
+  date: $("date"),
+  odometer: $("odometer"),
+  fromPct: $("fromPct"),
+  toPct: $("toPct"),
+  kwh: $("kwh"),
+  cost: $("cost"),
+  notes: $("notes"),
+
+  addBtn: $("addBtn"),
+  resetFormBtn: $("resetFormBtn"),
+  formHint: $("formHint"),
+
+  filterVehicle: $("filterVehicle"),
+  filterYear: $("filterYear"),
+  clearFiltersBtn: $("clearFiltersBtn"),
+
+  countShown: $("countShown"),
+  countAll: $("countAll"),
+  sortState: $("sortState"),
+
+  tbody: $("tbody"),
+  statsGrid: $("statsGrid"),
+  monthlyBody: $("monthlyBody"),
+
+  exportBtn: $("exportBtn"),
+  copyCsvBtn: $("copyCsvBtn"),
+  importFile: $("importFile"),
+  importBtn: $("importBtn"),
+  wipeBtn: $("wipeBtn"),
+
+  chart: $("chart"),
+};
+
+let state = {
+  data: loadData(),
+  sortDesc: true,         // Date ↓ by default
+  filterVehicle: "ALL",
+  filterYear: "ALL",
+};
+
+// ------- Data Model -------
+/**
+ * Entry:
+ * {
+ *   id: string,
+ *   date: "YYYY-MM-DD",
+ *   from: number,
+ *   to: number,
+ *   delta: number,
+ *   vehicle?: string,
+ *   location?: string,
+ *   odometer?: number,
+ *   kwh?: number,
+ *   cost?: number,
+ *   notes?: string,
+ *   createdAt: ISO string
+ * }
+ */
+
+function uid(){
+  return Math.random().toString(16).slice(2) + "-" + Date.now().toString(16);
+}
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return seedDataIfEmpty([]);
+    const parsed = JSON.parse(raw);
+    if(Array.isArray(parsed)) return seedDataIfEmpty(parsed);
+    if(parsed && Array.isArray(parsed.entries)) return seedDataIfEmpty(parsed.entries); // backwards compat
+    return seedDataIfEmpty([]);
+  }catch(e){
+    console.warn("loadData error:", e);
+    return seedDataIfEmpty([]);
+  }
+}
+
+function seedDataIfEmpty(arr){
+  // Si tu veux: un seed initial vide. Ici, on garde vide (pas de seed).
+  // Mais si tu veux pré-remplir avec ton historique 2026, décommente ci-dessous.
+  // if(arr.length === 0){
+  //   return [
+  //     {id:uid(), date:"2026-01-05", from:40, to:80, delta:40, vehicle:"Anne", createdAt:new Date().toISOString()},
+  //     ...
+  //   ];
+  // }
+  return normalizeEntries(arr);
+}
+
+function normalizeEntries(entries){
+  return entries
+    .map(e => {
+      const from = toNum(e.from);
+      const to = toNum(e.to);
+      const delta = Number.isFinite(from) && Number.isFinite(to) ? (to - from) : toNum(e.delta);
+      return {
+        id: e.id || uid(),
+        date: e.date || "",
+        from,
+        to,
+        delta,
+        vehicle: (e.vehicle ?? "").toString().trim(),
+        location: (e.location ?? "").toString().trim(),
+        odometer: numOrNull(e.odometer),
+        kwh: numOrNull(e.kwh),
+        cost: numOrNull(e.cost),
+        notes: (e.notes ?? "").toString().trim(),
+        createdAt: e.createdAt || new Date().toISOString(),
+      };
+    })
+    .filter(e => !!e.date);
+}
+
+function saveData(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
+  updateStorageBadge();
+}
+
+function updateStorageBadge(){
+  const bytes = new Blob([JSON.stringify(state.data)]).size;
+  els.storageBadge.textContent = `LocalStorage: ${state.data.length} entrées • ${formatBytes(bytes)}`;
+}
+
+function formatBytes(bytes){
+  const units = ["B","KB","MB","GB"];
+  let i=0, n=bytes;
+  while(n>=1024 && i<units.length-1){ n/=1024; i++; }
+  return `${n.toFixed(i===0?0:1)} ${units[i]}`;
+}
+
+function toNum(v){
+  const n = Number(v);
+  return Number.isFinite(n) ? n : NaN;
+}
+function numOrNull(v){
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+// ------- Filters / Sorting -------
+function getFiltered(){
+  let list = [...state.data];
+
+  // filters
+  if(state.filterVehicle !== "ALL"){
+    list = list.filter(e => (e.vehicle || "").toLowerCase() === state.filterVehicle.toLowerCase());
+  }
+  if(state.filterYear !== "ALL"){
+    list = list.filter(e => (e.date || "").slice(0,4) === state.filterYear);
+  }
+
+  // sort by date then createdAt
+  list.sort((a,b) => {
+    const da = a.date || "";
+    const db = b.date || "";
+    if(da === db){
+      const ca = a.createdAt || "";
+      const cb = b.createdAt || "";
+      return state.sortDesc ? (cb.localeCompare(ca)) : (ca.localeCompare(cb));
+    }
+    return state.sortDesc ? (db.localeCompare(da)) : (da.localeCompare(db));
+  });
+
+  return list;
+}
+
+// ------- UI: Form -------
+function setTodayIfEmpty(){
+  if(!els.date.value){
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,"0");
+    const dd = String(d.getDate()).padStart(2,"0");
+    els.date.value = `${yyyy}-${mm}-${dd}`;
+  }
+}
+
+function resetForm(){
+  els.vehicle.value = "";
+  els.location.value = "";
+  els.odometer.value = "";
+  els.fromPct.value = "";
+  els.toPct.value = "";
+  els.kwh.value = "";
+  els.cost.value = "";
+  els.notes.value = "";
+  setTodayIfEmpty();
+  els.formHint.textContent = "";
+}
+
+function validateEntry(e){
+  const errors = [];
+  if(!e.date) errors.push("Date manquante.");
+  if(!Number.isFinite(e.from) || e.from < 0 || e.from > 100) errors.push("Le % 'De' doit être entre 0 et 100.");
+  if(!Number.isFinite(e.to) || e.to < 0 || e.to > 100) errors.push("Le % 'À' doit être entre 0 et 100.");
+  if(Number.isFinite(e.from) && Number.isFinite(e.to) && e.to < e.from) errors.push("Le % 'À' doit être ≥ au % 'De'.");
+  if(e.kwh != null && e.kwh < 0) errors.push("kWh ne peut pas être négatif.");
+  if(e.cost != null && e.cost < 0) errors.push("Coût ne peut pas être négatif.");
+  if(e.odometer != null && e.odometer < 0) errors.push("Odomètre ne peut pas être négatif.");
+  return errors;
+}
+
+function readFormEntry(){
+  const vehicle = els.vehicle.value.trim();
+  const location = els.location.value.trim();
+  const date = els.date.value;
+  const odometer = els.odometer.value === "" ? null : numOrNull(els.odometer.value);
+  const from = toNum(els.fromPct.value);
+  const to = toNum(els.toPct.value);
+  const kwh = els.kwh.value === "" ? null : numOrNull(els.kwh.value);
+  const cost = els.cost.value === "" ? null : numOrNull(els.cost.value);
+  const notes = els.notes.value.trim();
+
+  const entry = {
+    id: uid(),
+    date,
+    from,
+    to,
+    delta: (Number.isFinite(from) && Number.isFinite(to)) ? (to - from) : NaN,
+    vehicle,
+    location,
+    odometer,
+    kwh,
+    cost,
+    notes,
+    createdAt: new Date().toISOString(),
+  };
+  return entry;
+}
+
+els.addBtn.addEventListener("click", () => {
+  const entry = readFormEntry();
+  const errors = validateEntry(entry);
+  if(errors.length){
+    els.formHint.textContent = errors.join(" ");
+    els.formHint.style.color = "var(--danger)";
+    return;
+  }
+  state.data.push(entry);
+  saveData();
+  renderAll();
+  els.formHint.textContent = "Ajouté ✅";
+  els.formHint.style.color = "var(--accent2)";
+});
+
+els.resetFormBtn.addEventListener("click", resetForm);
+
+// ------- UI: Filters -------
+function rebuildFilterOptions(){
+  const vehicles = Array.from(new Set(state.data.map(e => (e.vehicle || "").trim()).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+  const years = Array.from(new Set(state.data.map(e => (e.date||"").slice(0,4)).filter(Boolean))).sort((a,b)=>b.localeCompare(a));
+
+  // vehicle
+  els.filterVehicle.innerHTML = "";
+  const optAllV = document.createElement("option");
+  optAllV.value = "ALL"; optAllV.textContent = "Tous";
+  els.filterVehicle.appendChild(optAllV);
+  vehicles.forEach(v => {
+    const o = document.createElement("option");
+    o.value = v; o.textContent = v;
+    els.filterVehicle.appendChild(o);
+  });
+  els.filterVehicle.value = state.filterVehicle;
+
+  // year
+  els.filterYear.innerHTML = "";
+  const optAllY = document.createElement("option");
+  optAllY.value = "ALL"; optAllY.textContent = "Toutes";
+  els.filterYear.appendChild(optAllY);
+  years.forEach(y => {
+    const o = document.createElement("option");
+    o.value = y; o.textContent = y;
+    els.filterYear.appendChild(o);
+  });
+  els.filterYear.value = state.filterYear;
+}
+
+els.filterVehicle.addEventListener("change", () => {
+  state.filterVehicle = els.filterVehicle.value;
+  renderAll();
+});
+els.filterYear.addEventListener("change", () => {
+  state.filterYear = els.filterYear.value;
+  renderAll();
+});
+els.clearFiltersBtn.addEventListener("click", () => {
+  state.filterVehicle = "ALL";
+  state.filterYear = "ALL";
+  els.filterVehicle.value = "ALL";
+  els.filterYear.value = "ALL";
+  renderAll();
+});
+
+// Click sort state badge to toggle sort direction
+els.sortState.addEventListener("click", () => {
+  state.sortDesc = !state.sortDesc;
+  renderAll();
+});
+
+// Make it clickable
+els.sortState.style.cursor = "pointer";
+els.sortState.title = "Clique pour inverser le tri";
+
+// ------- UI: Table -------
+function escapeHtml(s){
+  return (s ?? "").toString()
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+function renderTable(list){
+  els.tbody.innerHTML = "";
+  list.forEach(e => {
+    const tr = document.createElement("tr");
+
+    const costStr = (e.cost == null) ? "" : formatMoney(e.cost);
+    const kwhStr  = (e.kwh  == null) ? "" : formatNum(e.kwh, 1);
+    const vehStr  = escapeHtml(e.vehicle || "");
+    const locStr  = escapeHtml(e.location || "");
+    const notesStr= escapeHtml(e.notes || "");
+
+    tr.innerHTML = `
+      <td class="mono">${escapeHtml(e.date)}</td>
+      <td class="mono">${formatInt(e.from)}</td>
+      <td class="mono">${formatInt(e.to)}</td>
+      <td class="mono"><b>${formatInt(e.delta)}</b></td>
+      <td class="mono">${kwhStr}</td>
+      <td class="mono">${costStr}</td>
+      <td>${vehStr}</td>
+      <td>${locStr}</td>
+      <td>${notesStr}</td>
+      <td>
+        <div class="actions">
+          <button class="btnGhost" data-edit="${e.id}">Éditer</button>
+          <button class="btnDanger" data-del="${e.id}">Suppr.</button>
+        </div>
+      </td>
+    `;
+
+    els.tbody.appendChild(tr);
+  });
+
+  // bind actions
+  els.tbody.querySelectorAll("button[data-del]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.getAttribute("data-del");
+      const entry = state.data.find(x => x.id === id);
+      if(!entry) return;
+      const ok = confirm(`Supprimer l'entrée du ${entry.date} (${entry.from}→${entry.to}) ?`);
+      if(!ok) return;
+      state.data = state.data.filter(x => x.id !== id);
+      saveData();
+      renderAll();
+    });
+  });
+
+  els.tbody.querySelectorAll("button[data-edit]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.getAttribute("data-edit");
+      openEditDialog(id);
+    });
+  });
+}
+
+function formatInt(n){
+  const x = Number(n);
+  return Number.isFinite(x) ? String(Math.round(x)) : "";
+}
+function formatNum(n, decimals=1){
+  const x = Number(n);
+  return Number.isFinite(x) ? x.toFixed(decimals) : "";
+}
+function formatMoney(n){
+  const x = Number(n);
+  return Number.isFinite(x) ? x.toFixed(2) : "";
+}
+
+// ------- Edit Dialog (simple prompt-based, robust for iOS) -------
+function openEditDialog(id){
+  const e = state.data.find(x => x.id === id);
+  if(!e) return;
+
+  // Simple editing flow (prompts). Works everywhere without modal complexity.
+  const date = prompt("Date (YYYY-MM-DD):", e.date) ?? e.date;
+  const fromStr = prompt("De (%) :", String(e.from)) ?? String(e.from);
+  const toStr   = prompt("À (%) :", String(e.to)) ?? String(e.to);
+  const veh = prompt("Véhicule :", e.vehicle || "") ?? (e.vehicle || "");
+  const loc = prompt("Lieu :", e.location || "") ?? (e.location || "");
+  const kwhStr = prompt("kWh (optionnel):", e.kwh == null ? "" : String(e.kwh)) ?? (e.kwh == null ? "" : String(e.kwh));
+  const costStr= prompt("Coût $ (optionnel):", e.cost == null ? "" : String(e.cost)) ?? (e.cost == null ? "" : String(e.cost));
+  const odoStr = prompt("Odomètre km (optionnel):", e.odometer == null ? "" : String(e.odometer)) ?? (e.odometer == null ? "" : String(e.odometer));
+  const notes  = prompt("Notes :", e.notes || "") ?? (e.notes || "");
+
+  const from = toNum(fromStr);
+  const to = toNum(toStr);
+
+  const updated = {
+    ...e,
+    date: (date || "").trim(),
+    from,
+    to,
+    delta: (Number.isFinite(from) && Number.isFinite(to)) ? (to - from) : e.delta,
+    vehicle: (veh || "").trim(),
+    location: (loc || "").trim(),
+    kwh: (kwhStr === "" ? null : numOrNull(kwhStr)),
+    cost:(costStr === "" ? null : numOrNull(costStr)),
+    odometer:(odoStr === "" ? null : numOrNull(odoStr)),
+    notes: (notes || "").trim(),
+  };
+
+  const errors = validateEntry(updated);
+  if(errors.length){
+    alert("Erreur:\n" + errors.join("\n"));
+    return;
+  }
+
+  Object.assign(e, updated);
+  saveData();
+  renderAll();
+}
+
+// ------- Stats / Bilan -------
+function computeStats(list){
+  const n = list.length;
+  const deltas = list.map(e => e.delta).filter(Number.isFinite);
+  const totalDelta = deltas.reduce((a,b)=>a+b,0);
+  const avgDelta = n ? (totalDelta / n) : 0;
+  const minDelta = deltas.length ? Math.min(...deltas) : 0;
+  const maxDelta = deltas.length ? Math.max(...deltas) : 0;
+
+  const kwhs = list.map(e => e.kwh).filter(v => typeof v === "number" && Number.isFinite(v));
+  const totalKwh = kwhs.reduce((a,b)=>a+b,0);
+
+  const costs = list.map(e => e.cost).filter(v => typeof v === "number" && Number.isFinite(v));
+  const totalCost = costs.reduce((a,b)=>a+b,0);
+
+  const costPerKwh = (totalKwh > 0) ? (totalCost / totalKwh) : null;
+
+  // average "to" level
+  const tos = list.map(e => e.to).filter(Number.isFinite);
+  const avgTo = tos.length ? (tos.reduce((a,b)=>a+b,0) / tos.length) : 0;
+
+  // cadence (days between charges)
+  const dates = list.map(e => e.date).filter(Boolean).sort();
+  const gaps = [];
+  for(let i=1;i<dates.length;i++){
+    const a = new Date(dates[i-1]);
+    const b = new Date(dates[i]);
+    const diff = Math.round((b - a) / (1000*60*60*24));
+    if(Number.isFinite(diff) && diff >= 0) gaps.push(diff);
+  }
+  const avgGap = gaps.length ? (gaps.reduce((a,b)=>a+b,0)/gaps.length) : null;
+
+  // last charge
+  const last = list.slice().sort((a,b)=> (b.date||"").localeCompare(a.date||""))[0] || null;
+
+  return {
+    n,
+    totalDelta,
+    avgDelta,
+    minDelta,
+    maxDelta,
+    totalKwh,
+    totalCost,
+    costPerKwh,
+    avgTo,
+    avgGap,
+    last,
+  };
+}
+
+function renderStats(list){
+  const s = computeStats(list);
+
+  const tiles = [
+    {k:"Entrées (filtre)", v: s.n, s:""},
+    {k:"Δ% total", v: formatInt(s.totalDelta), s:"Somme des (À - De)"},
+    {k:"Δ% moyen", v: s.n ? formatNum(s.avgDelta,1) : "0.0", s:"Par recharge"},
+    {k:"Δ% min / max", v: `${formatInt(s.minDelta)} / ${formatInt(s.maxDelta)}`, s:""},
+    {k:"Niveau moyen (À)", v: s.n ? formatNum(s.avgTo,1) + "%" : "0.0%", s:""},
+    {k:"Cadence moyenne", v: s.avgGap==null ? "—" : formatNum(s.avgGap,1)+" j", s:"Entre 2 dates"},
+    {k:"kWh total", v: s.totalKwh ? formatNum(s.totalKwh,1) : "—", s:"Entrées avec kWh"},
+    {k:"$ total", v: s.totalCost ? formatMoney(s.totalCost) : "—", s:"Entrées avec coût"},
+    {k:"$ / kWh", v: s.costPerKwh==null ? "—" : formatMoney(s.costPerKwh), s:""},
+    {k:"Dernière recharge", v: s.last ? s.last.date : "—", s: s.last ? `${formatInt(s.last.from)}→${formatInt(s.last.to)} (Δ${formatInt(s.last.delta)})` : ""},
+  ];
+
+  els.statsGrid.innerHTML = "";
+  tiles.forEach(t => {
+    const div = document.createElement("div");
+    div.className = "stat";
+    div.innerHTML = `
+      <div class="k">${escapeHtml(t.k)}</div>
+      <div class="v">${escapeHtml(String(t.v))}</div>
+      <div class="s">${escapeHtml(t.s)}</div>
+    `;
+    els.statsGrid.appendChild(div);
+  });
+}
+
+function groupMonthly(list){
+  // key: YYYY-MM
+  const m = new Map();
+  list.forEach(e => {
+    const key = (e.date || "").slice(0,7);
+    if(!key) return;
+    if(!m.has(key)){
+      m.set(key, {key, count:0, delta:0, kwh:0, cost:0, kwhCount:0, costCount:0});
+    }
+    const x = m.get(key);
+    x.count++;
+    if(Number.isFinite(e.delta)) x.delta += e.delta;
+    if(typeof e.kwh === "number" && Number.isFinite(e.kwh)){
+      x.kwh += e.kwh; x.kwhCount++;
+    }
+    if(typeof e.cost === "number" && Number.isFinite(e.cost)){
+      x.cost += e.cost; x.costCount++;
+    }
+  });
+
+  return Array.from(m.values()).sort((a,b)=> b.key.localeCompare(a.key));
+}
+
+function renderMonthly(list){
+  const rows = groupMonthly(list);
+  els.monthlyBody.innerHTML = "";
+
+  rows.forEach(r => {
+    const tr = document.createElement("tr");
+    const cpk = (r.kwh > 0) ? (r.cost / r.kwh) : null;
+    tr.innerHTML = `
+      <td class="mono">${escapeHtml(r.key)}</td>
+      <td class="mono">${r.count}</td>
+      <td class="mono"><b>${formatInt(r.delta)}</b></td>
+      <td class="mono">${r.kwh > 0 ? formatNum(r.kwh,1) : "—"}</td>
+      <td class="mono">${r.cost > 0 ? formatMoney(r.cost) : "—"}</td>
+      <td class="mono">${cpk == null ? "—" : formatMoney(cpk)}</td>
+    `;
+    els.monthlyBody.appendChild(tr);
+  });
+
+  if(rows.length === 0){
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="6" class="tiny" style="padding:12px 8px">Aucune donnée.</td>`;
+    els.monthlyBody.appendChild(tr);
+  }
+}
+
+// ------- Chart (Canvas) -------
+function drawChart(list){
+  const canvas = els.chart;
+  const ctx = canvas.getContext("2d");
+
+  // handle HiDPI
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.round(rect.width * dpr);
+  canvas.height = Math.round(200 * dpr);
+  ctx.scale(dpr, dpr);
+
+  const W = rect.width;
+  const H = 200;
+
+  // background already via CSS; clear for crisp redraw
+  ctx.clearRect(0,0,W,H);
+
+  const padding = {l:38, r:14, t:14, b:28};
+
+  const points = list
+    .slice()
+    .sort((a,b)=> (a.date||"").localeCompare(b.date||""))
+    .map(e => ({x:e.date, y:(Number.isFinite(e.delta)?e.delta:0), raw:e}));
+
+  // grid + axes
+  const yMax = Math.max(10, ...points.map(p=>p.y));
+  const yMin = Math.min(0, ...points.map(p=>p.y));
+  const yRange = (yMax - yMin) || 1;
+
+  function xAt(i){
+    if(points.length<=1) return padding.l;
+    const t = i/(points.length-1);
+    return padding.l + t*(W - padding.l - padding.r);
+  }
+  function yAt(val){
+    const t = (val - yMin)/yRange;
+    return (H - padding.b) - t*(H - padding.t - padding.b);
+  }
+
+  // grid lines
+  ctx.globalAlpha = 1;
+  ctx.lineWidth = 1;
+
+  // y ticks
+  ctx.font = "12px " + getComputedStyle(document.body).fontFamily;
+  ctx.fillStyle = "rgba(232,236,255,.8)";
+  ctx.strokeStyle = "rgba(255,255,255,.10)";
+
+  const ticks = 4;
+  for(let i=0;i<=ticks;i++){
+    const v = yMin + (i/ticks)*yRange;
+    const y = yAt(v);
+    ctx.beginPath();
+    ctx.moveTo(padding.l, y);
+    ctx.lineTo(W - padding.r, y);
+    ctx.stroke();
+    ctx.fillText(Math.round(v).toString(), 6, y+4);
+  }
+
+  // x axis baseline
+  ctx.strokeStyle = "rgba(255,255,255,.18)";
+  ctx.beginPath();
+  ctx.moveTo(padding.l, H - padding.b);
+  ctx.lineTo(W - padding.r, H - padding.b);
+  ctx.stroke();
+
+  if(points.length === 0){
+    ctx.fillStyle = "rgba(167,176,214,.85)";
+    ctx.fillText("Aucune donnée à afficher.", padding.l, padding.t+14);
+    return;
+  }
+
+  // line
+  ctx.strokeStyle = "rgba(122,167,255,.85)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  points.forEach((p,i)=>{
+    const x = xAt(i);
+    const y = yAt(p.y);
+    if(i===0) ctx.moveTo(x,y);
+    else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  // points
+  ctx.fillStyle = "rgba(125,255,178,.90)";
+  points.forEach((p,i)=>{
+    const x = xAt(i);
+    const y = yAt(p.y);
+    ctx.beginPath();
+    ctx.arc(x,y,3.5,0,Math.PI*2);
+    ctx.fill();
+  });
+
+  // x labels (sparse)
+  ctx.fillStyle = "rgba(167,176,214,.9)";
+  ctx.font = "11px " + getComputedStyle(document.body).fontFamily;
+  const step = Math.max(1, Math.floor(points.length/6));
+  for(let i=0;i<points.length;i+=step){
+    const x = xAt(i);
+    const d = points[i].x;
+    ctx.fillText(d.slice(5), Math.max(padding.l, x-14), H - 10);
+  }
+}
+
+// ------- Import / Export -------
+function exportJSON(){
+  const payload = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    entries: state.data
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `recharge_ve_export_${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function toCSV(list){
+  const header = ["date","from_percent","to_percent","delta_percent","kwh","cost","vehicle","location","odometer_km","notes"];
+  const rows = list.map(e => ([
+    e.date ?? "",
+    safeCsv(e.from),
+    safeCsv(e.to),
+    safeCsv(e.delta),
+    e.kwh ?? "",
+    e.cost ?? "",
+    safeCsv(e.vehicle ?? ""),
+    safeCsv(e.location ?? ""),
+    e.odometer ?? "",
+    safeCsv(e.notes ?? "")
+  ]));
+  return [header.join(","), ...rows.map(r => r.map(csvCell).join(","))].join("\n");
+
+  function csvCell(v){
+    const s = (v ?? "").toString();
+    if(/[",\n]/.test(s)) return `"${s.replaceAll('"','""')}"`;
+    return s;
+  }
+  function safeCsv(v){ return (v ?? "").toString(); }
+}
+
+async function copyCSV(){
+  const list = getFiltered();
+  const csv = toCSV(list);
+  try{
+    await navigator.clipboard.writeText(csv);
+    alert("CSV copié ✅ (tu peux coller dans Numbers/Excel)");
+  }catch(e){
+    // fallback
+    prompt("Copie le CSV ci-dessous:", csv);
+  }
+}
+
+function importJSONFromText(text){
+  let parsed;
+  try{
+    parsed = JSON.parse(text);
+  }catch(e){
+    alert("Fichier invalide: JSON illisible.");
+    return;
+  }
+
+  let entries = [];
+  if(Array.isArray(parsed)) entries = parsed;
+  else if(parsed && Array.isArray(parsed.entries)) entries = parsed.entries;
+  else {
+    alert("Format non reconnu. Attendu: tableau ou objet { entries: [...] }.");
+    return;
+  }
+
+  const normalized = normalizeEntries(entries);
+  if(normalized.length === 0){
+    alert("Aucune entrée valide trouvée.");
+    return;
+  }
+
+  // merge by id (if collision, keep latest by createdAt)
+  const map = new Map(state.data.map(e => [e.id, e]));
+  normalized.forEach(e => {
+    if(!map.has(e.id)) map.set(e.id, e);
+    else {
+      const cur = map.get(e.id);
+      const curT = (cur.createdAt || "");
+      const newT = (e.createdAt || "");
+      if(newT > curT) map.set(e.id, e);
+    }
+  });
+
+  state.data = Array.from(map.values());
+  saveData();
+  rebuildFilterOptions();
+  renderAll();
+  alert(`Import réussi ✅ Ajout/Merge: ${normalized.length} entrées`);
+}
+
+els.exportBtn.addEventListener("click", exportJSON);
+els.copyCsvBtn.addEventListener("click", copyCSV);
+
+els.importBtn.addEventListener("click", async () => {
+  const f = els.importFile.files?.[0];
+  if(!f){
+    alert("Choisis un fichier JSON d'abord.");
+    return;
+  }
+  const text = await f.text();
+  importJSONFromText(text);
+  els.importFile.value = "";
+});
+
+els.wipeBtn.addEventListener("click", () => {
+  const ok = confirm("Effacer TOUTES les données locales de recharge VE sur cet appareil ?");
+  if(!ok) return;
+  state.data = [];
+  saveData();
+  rebuildFilterOptions();
+  renderAll();
+});
+
+// ------- Render all -------
+function renderAll(){
+  const filtered = getFiltered();
+
+  // counts
+  els.countAll.textContent = state.data.length;
+  els.countShown.textContent = filtered.length;
+
+  // sort label
+  els.sortState.textContent = state.sortDesc ? "Date ↓" : "Date ↑";
+
+  // table
+  renderTable(filtered);
+
+  // stats + monthly + chart
+  renderStats(filtered);
+  renderMonthly(filtered);
+  drawChart(filtered);
+
+  // filters options refresh (but keep selection)
+  rebuildFilterOptions();
+}
+
+// ------- Init -------
+(function init(){
+  updateStorageBadge();
+  setTodayIfEmpty();
+  rebuildFilterOptions();
+  renderAll();
+
+  // Make sort badge interactive (wrap in parent pill)
+  const pill = els.sortState.closest(".pill");
+  if(pill){
+    pill.style.cursor = "pointer";
+    pill.title = "Clique pour inverser le tri";
+    pill.addEventListener("click", () => {
+      state.sortDesc = !state.sortDesc;
+      renderAll();
+    });
+  }
+})();
+</script>
+</body>
+</html>
